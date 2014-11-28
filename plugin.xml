@@ -22,7 +22,7 @@
                 <param name="android-package" value="org.apache.cordova.dgram.Dgram"/>
             </feature>
         </config-file>
-       <source-file src="src/android/Datagram.java" target-dir="src/org/apache/cordova/dgram/" />
+       <source-file src="src/android/Dgram.java" target-dir="src/org/apache/cordova/dgram/" />
     </platform>
 
 </plugin>

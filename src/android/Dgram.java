@@ -16,7 +16,7 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 
 public class Dgram extends CordovaPlugin {
-    private static final String TAG = Datagram.class.getSimpleName();
+    private static final String TAG = Dgram.class.getSimpleName();
 
     SparseArray<DatagramSocket> m_sockets;
     SparseArray<SocketListener> m_listeners;
