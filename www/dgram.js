@@ -1,13 +1,12 @@
 var exec = cordova.require('cordova/exec');
 
 // Events: 'message', 'error'
-function Socket(type) {
+function Socket(type, port) {
     this._multicastSocket = type === 'multicast-udp4';
     this._socketId = ++Socket.socketCount;
     this._eventHandlers = { };
     Socket.sockets[this._socketId] = this;
-
-    exec(null, null, 'Dgram', 'create', [ this._socketId, this._multicastSocket ]);
+    exec(null, null, 'Dgram', 'create', [ this._socketId, this._multicastSocket, port ]);
 }
 
 Socket.socketCount = 0;
@@ -17,9 +16,9 @@ Socket.prototype.on = function (event, callback) {
     this._eventHandlers[event] = callback;
 };
 
-Socket.prototype.bind = function (port, callback) {
+Socket.prototype.bind = function (callback) {
     callback = callback || function () { };
-    exec(callback.bind(null, null), callback.bind(null), 'Dgram', 'bind', [ this._socketId, port ]);
+    exec(callback.bind(null, null), callback.bind(null), 'Dgram', 'bind', [ this._socketId ]);
 };
 
 Socket.prototype.close = function () {
@@ -53,11 +52,15 @@ Socket.prototype.leaveGroup = function (address, callback) {
     exec(callback.bind(null, null), callback.bind(null), 'Dgram', 'leaveGroup', [ this._socketId, address ]);
 };
 
-function createSocket(type) {
+function createSocket(type, port) {
     if (type !== 'udp4' && type !== 'multicast-udp4') {
         throw new Error('Illegal Argument, only udp4 and multicast-udp4 supported');
     }
-    return new Socket(type);
+    iport = parseInt(port, 10);
+    if (isNaN(iport) || iport === 0){
+        throw new Error('Illegal Port number');
+    }
+    return new Socket(type, iport);
 }
 
 function onMessage(id, msg, remoteAddress, remotePort) {

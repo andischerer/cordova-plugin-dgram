@@ -14,16 +14,26 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 
 public class Dgram extends CordovaPlugin {
     private static final String TAG = Dgram.class.getSimpleName();
 
     SparseArray<DatagramSocket> m_sockets;
     SparseArray<SocketListener> m_listeners;
+    SparseArray<SocketConfig> m_config;
 
     public Dgram() {
         m_sockets = new SparseArray<DatagramSocket>();
         m_listeners = new SparseArray<SocketListener>();
+        m_config = new SparseArray<SocketConfig>();
+    }
+
+    private class SocketConfig {
+        NetworkInterface networkInterface = null;
+        int port;
     }
 
     private class SocketListener extends Thread {
@@ -63,15 +73,45 @@ public class Dgram extends CordovaPlugin {
         }
     }
 
+    public NetworkInterface getActiveWifiInterface() throws SocketException {
+        NetworkInterface activeInterface = null;
+        for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();){
+            NetworkInterface intf = en.nextElement();
+            if (intf.isUp() && intf.supportsMulticast() && intf.getInterfaceAddresses().size() > 0 && !intf.isLoopback() && !intf.isVirtual() && !intf.isPointToPoint()){
+                if (activeInterface == null){
+                    activeInterface = intf;
+                }else{
+                    if (!activeInterface.getName().contains("wlan") && !activeInterface.getName().contains("ap")){
+                        activeInterface = intf;
+                    }
+                }
+            }
+        }
+        Log.d(TAG, "Using Network Interface: " + activeInterface.getName());
+        return activeInterface;
+    }
+
     @Override
     public boolean execute(String action, JSONArray data, final CallbackContext callbackContext) throws JSONException {
         final int id = data.getInt(0);
         DatagramSocket socket = m_sockets.get(id);
+        SocketConfig config = m_config.get(id);
         if (action.equals("create")) {
+            assert config == null;
             assert socket == null;
             final boolean isMulticast = data.getBoolean(1);
+            config = new SocketConfig();
+            config.port = data.getInt(2);
             try {
-                socket = isMulticast ? new MulticastSocket(null) : new DatagramSocket(null);
+                if (isMulticast) {
+                    MulticastSocket mcSocket = new MulticastSocket(null);
+                    config.networkInterface = getActiveWifiInterface();
+                    mcSocket.setNetworkInterface(config.networkInterface);
+                    socket = mcSocket;
+                } else {
+                    socket = new DatagramSocket(null);
+                }
+                m_config.put(id, config);
                 m_sockets.put(id, socket);
                 callbackContext.success();
             } catch (Exception e) {
@@ -79,9 +119,8 @@ public class Dgram extends CordovaPlugin {
                 callbackContext.error(e.toString());
             }
         } else if (action.equals("bind")) {
-            final int port = data.getInt(1);
             try {
-                socket.bind(new InetSocketAddress(port));
+                socket.bind(new InetSocketAddress(config.port));
                 SocketListener listener = new SocketListener(id, socket);
                 m_listeners.put(id, listener);
                 listener.start();
@@ -94,7 +133,8 @@ public class Dgram extends CordovaPlugin {
             final String address = data.getString(1);
             MulticastSocket msocket = (MulticastSocket) socket;
             try {
-                msocket.joinGroup(InetAddress.getByName(address));
+                msocket.joinGroup(new InetSocketAddress(address, config.port), config.networkInterface);
+//                msocket.joinGroup(InetAddress.getByName(address));
                 callbackContext.success();
             } catch (Exception e) {
                 Log.d(TAG, "joinGroup exception:" + e.toString());
@@ -104,7 +144,8 @@ public class Dgram extends CordovaPlugin {
             final String address = data.getString(1);
             MulticastSocket msocket = (MulticastSocket) socket;
             try {
-                msocket.leaveGroup(InetAddress.getByName(address));
+                msocket.leaveGroup(new InetSocketAddress(address, config.port), config.networkInterface);
+//                msocket.leaveGroup(InetAddress.getByName(address));
                 callbackContext.success();
             } catch (Exception e) {
                 Log.d(TAG, "leaveGroup exception:" + e.toString());
