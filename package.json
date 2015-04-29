@@ -1,0 +1,29 @@
+{
+  "name": "cordova-plugin-dgram",
+  "version": "0.1.1",
+  "description": "Cordova-Plugin which supports node.js dgram API",
+  "cordova": {
+    "id": "cordova-plugin-dgram",
+    "platforms": [
+      "android"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andischerer/cordova-plugin-dgram.git"
+  },
+  "keywords": [
+    "UDP",
+    "Multicast",
+    "Datagram",
+    "dgram",
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "Andreas Scherer",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/andischerer/cordova-plugin-dgram/issues"
+  },
+  "homepage": "https://github.com/andischerer/cordova-plugin-dgram#readme"
+}

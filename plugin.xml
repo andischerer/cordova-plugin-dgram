@@ -2,23 +2,22 @@
 
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    id="org.apache.cordova.dgram"
+    id="cordova-plugin-dgram"
     version="0.1.1">
     <name>UDP Plugin</name>
-    <description>UDP Plugin which supports node.js dgram API</description>
-    <license>MIT</license>
+    <description>Cordova-Plugin which supports node.js dgram API</description>
     <keywords>UDP, Multicast, Datagram, dgram</keywords>
+    <license>MIT</license>
+    <repo>https://github.com/andischerer/cordova-plugin-dgram.git</repo>
+    <issue>https://github.com/andischerer/cordova-plugin-dgram/issues</issue>
 
-    <!-- cordova defines the file below with define('<plugin-id>.<name>') -->
     <js-module src="www/dgram.js" name="dgram">
         <clobbers target="dgram" />
     </js-module>
 
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
-            <!-- This is the name used for service name in cordova.exec -->
             <feature name="Dgram" >
-                <!-- This tells cordova which java class to load for this plugin -->
                 <param name="android-package" value="org.apache.cordova.dgram.Dgram"/>
             </feature>
         </config-file>
@@ -26,4 +25,3 @@
     </platform>
 
 </plugin>
-
