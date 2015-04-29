@@ -60,7 +60,7 @@ public class Dgram extends CordovaPlugin {
                     int port = packet.getPort();
 
                     Dgram.this.webView.sendJavascript(
-                            "cordova.require('org.apache.cordova.dgram.dgram')._onMessage("
+                            "cordova.require('cordova-plugin-dgram.dgram')._onMessage("
                                     + this.m_socketId + ","
                                     + "'" + msg + "',"
                                     + "'" + address + "',"
