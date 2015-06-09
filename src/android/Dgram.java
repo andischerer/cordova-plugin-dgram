@@ -7,8 +7,11 @@ import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -87,8 +90,31 @@ public class Dgram extends CordovaPlugin {
                 }
             }
         }
-        Log.d(TAG, "Using Network Interface: " + activeInterface.getName());
+        if (activeInterface != null) {
+            Log.d(TAG, "Using Network Interface: " + activeInterface.getName());
+        } else {
+            Log.d(TAG, "No active Network Interface found !");
+        }
         return activeInterface;
+    }
+
+    private JSONObject getErrorFromException(Exception e) {
+        JSONObject error = new JSONObject();
+
+        // get stacktace
+        StringWriter writer = new StringWriter();
+        PrintWriter printWriter = new PrintWriter( writer );
+        e.printStackTrace(printWriter);
+        printWriter.flush();
+
+        try {
+            error.put("error", e.toString());
+            error.put("stacktrace", writer.toString());
+        } catch (JSONException e1) {
+            Log.d(TAG, "JSON-Error Object could not be created.", e);
+        }
+
+        return error;
     }
 
     @Override
@@ -106,6 +132,9 @@ public class Dgram extends CordovaPlugin {
                 if (isMulticast) {
                     MulticastSocket mcSocket = new MulticastSocket(null);
                     config.networkInterface = getActiveWifiInterface();
+                    if (config.networkInterface == null) {
+                        throw new Exception("Could not create Socket. Active Interface is null.");
+                    }
                     mcSocket.setNetworkInterface(config.networkInterface);
                     socket = mcSocket;
                 } else {
@@ -115,10 +144,14 @@ public class Dgram extends CordovaPlugin {
                 m_sockets.put(id, socket);
                 callbackContext.success();
             } catch (Exception e) {
-                Log.d(TAG, "Create exception:" + e.toString());
-                callbackContext.error(e.toString());
+                Log.e(TAG, "Create exception:" + e.toString(), e);
+                callbackContext.error(getErrorFromException(e));
             }
         } else if (action.equals("bind")) {
+            if (socket == null) {
+                callbackContext.error("No Socket available!");
+                return true;
+            }
             try {
                 socket.bind(new InetSocketAddress(config.port));
                 SocketListener listener = new SocketListener(id, socket);
@@ -126,32 +159,44 @@ public class Dgram extends CordovaPlugin {
                 listener.start();
                 callbackContext.success();
             } catch (Exception e) {
-                Log.d(TAG, "Bind exception:" + e.toString());
-                callbackContext.error(e.toString());
+                Log.e(TAG, "Bind exception:" + e.toString(), e);
+                callbackContext.error(getErrorFromException(e));
             }
         } else if (action.equals("joinGroup")) {
+            if (socket == null) {
+                callbackContext.error("No Socket available!");
+                return true;
+            }
             final String address = data.getString(1);
-            MulticastSocket msocket = (MulticastSocket) socket;
             try {
+                MulticastSocket msocket = (MulticastSocket) socket;
                 msocket.joinGroup(new InetSocketAddress(address, config.port), config.networkInterface);
 //                msocket.joinGroup(InetAddress.getByName(address));
                 callbackContext.success();
             } catch (Exception e) {
-                Log.d(TAG, "joinGroup exception:" + e.toString());
-                callbackContext.error(e.toString());
+                Log.e(TAG, "joinGroup exception:" + e.toString(), e);
+                callbackContext.error(getErrorFromException(e));
             }
         } else if (action.equals("leaveGroup")) {
+            if (socket == null) {
+                callbackContext.error("No Socket available!");
+                return true;
+            }
             final String address = data.getString(1);
-            MulticastSocket msocket = (MulticastSocket) socket;
             try {
+                MulticastSocket msocket = (MulticastSocket) socket;
                 msocket.leaveGroup(new InetSocketAddress(address, config.port), config.networkInterface);
 //                msocket.leaveGroup(InetAddress.getByName(address));
                 callbackContext.success();
             } catch (Exception e) {
-                Log.d(TAG, "leaveGroup exception:" + e.toString());
-                callbackContext.error(e.toString());
+                Log.e(TAG, "leaveGroup exception:" + e.toString(), e);
+                callbackContext.error(getErrorFromException(e));
             }
         } else if (action.equals("send")) {
+            if (socket == null) {
+                callbackContext.error("No Socket available!");
+                return true;
+            }
             final String message = data.getString(1);
             final String address = data.getString(2);
             final int port = data.getInt(3);
@@ -166,8 +211,8 @@ public class Dgram extends CordovaPlugin {
                         localSocket.send(packet);
                         callbackContext.success(message);
                     } catch (IOException ioe) {
-                        Log.d(TAG, "send exception:" + ioe.toString());
-                        callbackContext.error("IOException: " + ioe.toString());
+                        Log.d(TAG, "send exception:" + ioe.toString(), ioe);
+                        callbackContext.error(getErrorFromException(ioe));
                     }
                 }
             });
