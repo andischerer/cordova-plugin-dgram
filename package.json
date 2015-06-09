@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-dgram",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Cordova-Plugin which supports node.js dgram API",
   "cordova": {
     "id": "cordova-plugin-dgram",
